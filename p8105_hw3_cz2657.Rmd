@@ -168,6 +168,27 @@ nys2010_plot = nys2010 %>%
   
 ```
 
+## Problem 3
+
+```{r}
+accel_df = read_csv("data/accel_data.csv") %>% 
+  janitor::clean_names() %>% 
+  mutate (weekday_weekend = ifelse(day %in% c("Sunday", "Saturday"), "weekend", "weekday")) %>% 
+  pivot_longer(activity_1:activity_1440, names_to = "minute", names_prefix = "activity_", values_to = "activity_count") %>% 
+  mutate(minute = as.numeric(minute)) 
+
+```
+
+The `accel_df` dataset has `r nrow(accel_df)` observations, which each represent the activity count for a single minute of a single day for the 63 year-old male over a 5 week period. The dataset has `r ncol(accel_df)` variables, which include the `minute` of the given day and the associated `activity_count` for that minute, the number of the `week` out of 5, the `day_id`, the `day` of the week, and the `weekday_weekend` variable, which notes if the specified day is a weekday or a weekend. 
+
+```{r}
+accel_df %>% 
+  group_by(day_id) %>% 
+  summarize(daily_activity = sum(activity_count)) %>% 
+  ggplot(aes(x= day_id, y = daily_activity)) + 
+  geom_line()
+  
+```
 
 
 
