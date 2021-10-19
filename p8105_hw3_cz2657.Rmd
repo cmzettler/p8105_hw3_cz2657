@@ -34,41 +34,39 @@ instacart
 instacart %>% 
   group_by(order_id) %>% 
   summarize(n_obs = n()) 
-
-instacart %>% 
-  count(aisle_id)
 ```
 
 The `instacart` dataset has `r ncol(instacart)` variables and `r nrow(instacart)` observations. Each observation is an item added to an Instacart order. The dataset describes those orders in terms of which items had been previously ordered by ths customer (`reordered`), in what order they were added to the cart (`add_to_cart_order`), and additional product details (`product id`, `product_name`, `aisle`, and `department`). For example, we know that for the first order (`order_id` = 1), customer `r pull(distinct(filter(instacart, order_id == 1), user_id))` placed their `r pull(distinct(filter(instacart, order_id == 1), order_number))`th order `r pull(distinct(filter(instacart, order_id == 1), days_since_prior_order))` days after their prior order. They ordered `r max(pull(filter(instacart, order_id == 1), add_to_cart_order))` items. 
 
 ```{r}
 instacart %>% 
+  count(aisle_id)
+
+instacart %>% 
   group_by(aisle_id) %>% 
   summarize (n_obs = n()) %>% 
   arrange(desc(n_obs))
-  
 ```
 
 There are 134 aisles in this dataset and aisles 83 (`r pull(distinct(filter(instacart, aisle_id == 83), aisle))`) and 24 (`r pull(distinct(filter(instacart, aisle_id == 24), aisle))`) have the most items ordered from them with over 150,000 items per aisle. 
 
 ```{r}
 instacart %>% 
-  group_by(aisle_id) %>% 
+  group_by(aisle) %>% 
   summarize (n_obs = n()) %>% 
   filter(n_obs > 10000) %>% 
-  mutate(aisle_id = fct_reorder(as.factor(aisle_id), n_obs)) %>% 
+  mutate(aisle = fct_reorder(as.factor(aisle), n_obs)) %>% 
   arrange(desc(n_obs)) %>% 
-  ggplot(aes(x = aisle_id, y = n_obs)) +
+  ggplot(aes(x = aisle, y = n_obs)) +
   geom_point() + 
+  theme(axis.text.x = element_text(angle = 90)) +
   labs(
     title = "Items (over 10,000) ordered per aisle", 
-    x = "Aisle Number", 
+    x = "Aisle", 
     y = "Number of Items Ordered", 
     caption = "Data from p8105 package `Instacart`"
   ) 
 ```
-
-## HOW TO FIX SCALE
 
 ```{r, message = FALSE}
 instacart %>% 
@@ -86,7 +84,7 @@ instacart %>%
   filter(product_name %in% c("Pink Lady Apples", "Coffee Ice Cream")) %>% 
   select(product_name, order_dow, order_hour_of_day) %>% 
   group_by(product_name, order_dow) %>% 
-  summarize(mean_hour = mean(order_hour_of_day)) %>% 
+  summarize(mean_hour = round(mean(order_hour_of_day))) %>% 
   pivot_wider(names_from = order_dow, values_from = mean_hour) %>% 
   rename("Sunday" = "0", "Monday" = "1", "Tuesday" = "2", "Wednesday" = "3", "Thursday" = "4", "Friday" = "5", "Saturday" = "6") %>% 
   knitr::kable(caption = "Mean hour of the day select items are ordered")
@@ -145,7 +143,8 @@ spaghetti = brfss %>%
 
 spaghetti %>% 
   ggplot(aes(x = year, y = avgvalue, group = locationabbr, color = locationabbr)) + 
-  geom_line() 
+  geom_line() +
+  theme(legend.position = "right")
   
 nys2006 = brfss %>% 
   filter(year == 2006, locationabbr == "NY") %>% 
@@ -173,9 +172,11 @@ nys2010_plot = nys2010 %>%
 accel_df = read_csv("data/accel_data.csv") %>% 
   janitor::clean_names() %>% 
   mutate (weekday_weekend = ifelse(day %in% c("Sunday", "Saturday"), "weekend", "weekday")) %>% 
-  pivot_longer(activity_1:activity_1440, names_to = "minute", names_prefix = "activity_", values_to = "activity_count") %>% 
+  pivot_longer(activity_1:activity_1440, 
+      names_to = "minute", 
+      names_prefix = "activity_", 
+      values_to = "activity_count") %>% 
   mutate(minute = as.numeric(minute)) 
-
 ```
 
 The `accel_df` dataset has `r nrow(accel_df)` observations, which each represent the activity count for a single minute of a single day for the 63 year-old male over a 5 week period. The dataset has `r ncol(accel_df)` variables, which include the `minute` of the given day and the associated `activity_count` for that minute, the number of the `week` out of 5, the `day_id`, the `day` of the week, and the `weekday_weekend` variable, which notes if the specified day is a weekday or a weekend. 
