@@ -39,7 +39,7 @@ instacart %>%
   count(aisle_id)
 ```
 
-The `instacart` dataset has `r ncol(instacart)` variables and `r nrow(instacart)` observations. Each observation is an item added to an Instacart order. The dataset describes those orders in terms of which items had been previously ordered by ths customer (`reordered`), what order they were added to the cart (`add_to_cart_order`), and additional product details (`product id`, `product_name`, `aisle`, and `department`). For example, we know that for the first order (`order_id` = 1), customer `r pull(filter(instacart, order_id == 1, add_to_cart_order ==1), user_id)` placed their `r pull(filter(instacart, order_id == 1, add_to_cart_order ==1), order_number)`th order `r pull(filter(instacart, order_id == 1, add_to_cart_order ==1), days_since_prior_order)` days after their prior order. they ordered `r max(pull(filter(instacart, order_id == 1), add_to_cart_order))` items. 
+The `instacart` dataset has `r ncol(instacart)` variables and `r nrow(instacart)` observations. Each observation is an item added to an Instacart order. The dataset describes those orders in terms of which items had been previously ordered by ths customer (`reordered`), in what order they were added to the cart (`add_to_cart_order`), and additional product details (`product id`, `product_name`, `aisle`, and `department`). For example, we know that for the first order (`order_id` = 1), customer `r pull(distinct(filter(instacart, order_id == 1), user_id))` placed their `r pull(distinct(filter(instacart, order_id == 1), order_number))`th order `r pull(distinct(filter(instacart, order_id == 1), days_since_prior_order))` days after their prior order. They ordered `r max(pull(filter(instacart, order_id == 1), add_to_cart_order))` items. 
 
 ```{r}
 instacart %>% 
@@ -76,8 +76,8 @@ instacart %>%
   select(aisle, product_name) %>% 
   group_by(aisle, product_name) %>% 
   summarize(number_ordered = n()) %>% 
-  filter(number_ordered == max(number_ordered)) %>% 
   arrange(desc(number_ordered)) %>% 
+  slice(1:3) %>% 
   knitr::kable(caption = "Most popular products in selected aisles")
 ```
 
@@ -91,7 +91,6 @@ instacart %>%
   rename("Sunday" = "0", "Monday" = "1", "Tuesday" = "2", "Wednesday" = "3", "Thursday" = "4", "Friday" = "5", "Saturday" = "6") %>% 
   knitr::kable(caption = "Mean hour of the day select items are ordered")
 ```
-
 
 ## Problem 2
 
@@ -183,14 +182,25 @@ The `accel_df` dataset has `r nrow(accel_df)` observations, which each represent
 
 ```{r}
 accel_df %>% 
-  group_by(day_id) %>% 
+  group_by(day) %>% 
   summarize(daily_activity = sum(activity_count)) %>% 
-  ggplot(aes(x= day_id, y = daily_activity)) + 
-  geom_line()
-  
+  mutate(day = as.factor(day), day = factor(day, levels = c("Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"))) %>% 
+  arrange(day) %>% 
+  knitr::kable(caption = "Total Activity per day of the week")
 ```
 
+Activity seems to increase in later weekdays (Wednesday - Friday) compared to weekends and earlier weekdays (Satursday - Tuesday). 
 
+```{r}
+accel_df %>% 
+  group_by(day, minute) %>% 
+  summarize(activity_time = sum(activity_count)) %>% 
+  mutate(day = as.factor(day), day = factor(day, levels = c("Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday")), hour = minute/60) %>% 
+  arrange(day) %>% 
+  ggplot(aes(x=hour, y = activity_time, color = day)) +
+  geom_line(alpha = .3)
+```
 
+It appears that activity is greatest throughout the day around 11 AM - 12 PM on Sundays and 7-9 PM on Fridays. There is minimal activity before 5 AM, presumably when this person is sleeping, and between 1-7 PM, presumably when this person is working. 
 
 
