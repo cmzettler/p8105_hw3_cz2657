@@ -122,13 +122,21 @@ brfss %>%
 ```
 
 In 2010, the following states were observed at the following number of locations: 
+
 *     7 locations: Colorado, Pennsylvania, and South Carolina 
+
 *     8 locations: Ohio 
+
 *     9 locations: Massachusetts and New York 
+
 *     10 locations: Nebraska and Washington 
+
 *     12 locations: California, Maryland, and North Carolina 
+
 *     16 locations: Texas 
+
 *     19 locations: New Jersey 
+
 *     41 locations: Florida 
 
 ```{r, message = FALSE}
@@ -202,6 +210,12 @@ Activity seems to increase in later weekdays (Wednesday - Friday) compared to we
 ## I prefer first one
 
 ```{r}
+
+knitr::opts_chunk$set(
+  fig.width = 6,
+  fig.asp = 3,
+  out.width = "90%"
+)
 accel_df %>% 
   group_by(day, minute) %>% 
   summarize(activity_time = sum(activity_count)) %>% 
