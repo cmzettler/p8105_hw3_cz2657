@@ -10,7 +10,7 @@ library(patchwork)
 
 knitr::opts_chunk$set(
   fig.width = 6,
-  fig.asp = .6,
+  fig.asp = 1,
   out.width = "90%"
 )
 
@@ -30,13 +30,9 @@ scale_fill_discrete = scale_fill_viridis_d
 ```{r}
 data("instacart") 
 instacart
-
-instacart %>% 
-  group_by(order_id) %>% 
-  summarize(n_obs = n()) 
 ```
 
-The `instacart` dataset has `r ncol(instacart)` variables and `r nrow(instacart)` observations. Each observation is an item added to an Instacart order. The dataset describes those orders in terms of which items had been previously ordered by ths customer (`reordered`), in what order they were added to the cart (`add_to_cart_order`), and additional product details (`product id`, `product_name`, `aisle`, and `department`). For example, we know that for the first order (`order_id` = 1), customer `r pull(distinct(filter(instacart, order_id == 1), user_id))` placed their `r pull(distinct(filter(instacart, order_id == 1), order_number))`th order `r pull(distinct(filter(instacart, order_id == 1), days_since_prior_order))` days after their prior order. They ordered `r max(pull(filter(instacart, order_id == 1), add_to_cart_order))` items. 
+The `instacart` dataset has `r ncol(instacart)` variables and `r nrow(instacart)` observations. Each observation is an item added to an Instacart order. The dataset describes those orders in terms of which items have been previously ordered by ths customer (`reordered`), in what order they were added to the cart (`add_to_cart_order`), and additional product details (`product id`, `product_name`, `aisle`, and `department`). For example, we know that for the first order (`order_id` = 1), customer `r pull(distinct(filter(instacart, order_id == 1), user_id))` placed their `r pull(distinct(filter(instacart, order_id == 1), order_number))`th order `r pull(distinct(filter(instacart, order_id == 1), days_since_prior_order))` days after their prior order. They ordered `r max(pull(filter(instacart, order_id == 1), add_to_cart_order))` items. 
 
 ```{r}
 instacart %>% 
@@ -62,7 +58,7 @@ instacart %>%
   theme(axis.text.x = element_text(angle = 90)) +
   labs(
     title = "Items (over 10,000) ordered per aisle", 
-    x = "Aisle", 
+    x = "Aisle Name", 
     y = "Number of Items Ordered", 
     caption = "Data from p8105 package `Instacart`"
   ) 
@@ -87,83 +83,89 @@ instacart %>%
   summarize(mean_hour = round(mean(order_hour_of_day))) %>% 
   pivot_wider(names_from = order_dow, values_from = mean_hour) %>% 
   rename("Sunday" = "0", "Monday" = "1", "Tuesday" = "2", "Wednesday" = "3", "Thursday" = "4", "Friday" = "5", "Saturday" = "6") %>% 
-  knitr::kable(caption = "Mean hour of the day select items are ordered")
+  knitr::kable(caption = "Mean hour of the 24-hour day select items are ordered")
 ```
 
 ## Problem 2
 
-```{r}
+```{r, message = FALSE}
 data("brfss_smart2010") 
 brfss_smart2010
 
 brfss = brfss_smart2010 %>% 
   janitor::clean_names() %>% 
-  filter(topic == "Overall Health") %>% 
-  mutate(response = as.factor(response), response = factor(response, levels = c("Poor", "Fair", "Good", "Very good", "Excellent")))
-  
+  filter(topic == "Overall Health", response %in% c("Poor", "Fair", "Good", "Very good", "Excellent")) %>% 
+  mutate(response = as.factor(response), response = factor(response, levels = c("Poor", "Fair", "Good", "Very good", "Excellent"))) %>% 
+  rename(state = locationabbr, state_county = locationdesc)
 ```
 
-```{r}
+```{r, message = FALSE}
 brfss %>% 
   filter(year == 2002) %>% 
-  group_by(locationabbr, locationdesc) %>% 
+  group_by(state, state_county) %>% 
   summarise(n_obs = n()) %>% 
-  count(locationabbr) %>% 
+  count(state) %>% 
   filter(n >= 7) %>% 
   arrange(n)
 ```
 
 In 2002, Connecticut, Florida, and North Carolina were each observed at 7 locations, Massachusetts and New Jersey were observed at 8 locations, and Pennsylvania was observed at 10 locations. 
 
-```{r}
+```{r, message = FALSE}
 brfss %>% 
   filter(year == 2010) %>% 
-  group_by(locationabbr, locationdesc) %>% 
+  group_by(state, state_county) %>% 
   summarise(n_obs = n()) %>% 
-  count(locationabbr) %>% 
+  count(state) %>% 
   filter(n >= 7) %>% 
   arrange(n)
 ```
 
 In 2010, the following states were observed at the following number of locations: 
-* 7 locations: Colorado, Pennsylvania, and South Carolina 
-* 8 locations: Ohio 
-* 9 locations: Massachusetts and New York 
-* 10 locations: Nebraska and Washington 
-* 12 locations: California, Maryland, and North Carolina 
-* 16 locations: Texas 
-* 19 locations: New Jersey 
-* 41 locations: Florida 
+*     7 locations: Colorado, Pennsylvania, and South Carolina 
+*     8 locations: Ohio 
+*     9 locations: Massachusetts and New York 
+*     10 locations: Nebraska and Washington 
+*     12 locations: California, Maryland, and North Carolina 
+*     16 locations: Texas 
+*     19 locations: New Jersey 
+*     41 locations: Florida 
 
-```{r}
+```{r, message = FALSE}
 spaghetti = brfss %>% 
   filter(response == "Excellent") %>% 
-  group_by(year, locationabbr) %>% 
+  group_by(year, state) %>% 
   summarize(avgvalue = mean(data_value))
 
 spaghetti %>% 
-  ggplot(aes(x = year, y = avgvalue, group = locationabbr, color = locationabbr)) + 
+  ggplot(aes(x = year, y = avgvalue, group = state, color = state)) + 
   geom_line() +
   theme(legend.position = "right")
-  
+```
+
+```{r, message = FALSE}
 nys2006 = brfss %>% 
-  filter(year == 2006, locationabbr == "NY") %>% 
-  group_by(locationdesc, response) 
+  filter(year == 2006, state == "NY") %>% 
+  group_by(state_county, response) 
 
 nys2010 = brfss %>% 
-  filter(year == 2010, locationabbr == "NY") %>% 
-  group_by(locationdesc, response) 
+  filter(year == 2010, state == "NY") %>% 
+  group_by(state_county, response) 
 
 nys2006_plot = nys2006 %>% 
-  ggplot(aes(x = response, y = data_value, group = locationdesc, color = locationdesc)) + 
-  geom_line()
+  ggplot(aes(x = response, y = data_value, group = state_county, color = state_county)) + 
+  geom_line() +
+  theme(legend.position = "right") +
+  labs(x = "Response in 2006")
 
 nys2010_plot = nys2010 %>% 
-  ggplot(aes(x = response, y = data_value, group = locationdesc, color = locationdesc)) + 
-  geom_line()
+  ggplot(aes(x = response, y = data_value, group = state_county, color = state_county)) + 
+  geom_line() +
+  theme(legend.position = "right") + 
+  labs(x = "Response in 2010")
 
-(nys2006_plot + nys2010_plot)
-  
+(nys2006_plot / nys2010_plot) + 
+  plot_annotation(title = "Data Value by Reponse Level in NY State in 2006 & 2010")
 ```
 
 ## Problem 3
@@ -171,7 +173,7 @@ nys2010_plot = nys2010 %>%
 ```{r}
 accel_df = read_csv("data/accel_data.csv") %>% 
   janitor::clean_names() %>% 
-  mutate (weekday_weekend = ifelse(day %in% c("Sunday", "Saturday"), "weekend", "weekday")) %>% 
+  mutate (weekday_weekend = as.factor(ifelse(day %in% c("Sunday", "Saturday"), "weekend", "weekday")), day = as.factor(day), day = factor(day, levels = c("Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"))) %>% 
   pivot_longer(activity_1:activity_1440, 
       names_to = "minute", 
       names_prefix = "activity_", 
@@ -179,29 +181,45 @@ accel_df = read_csv("data/accel_data.csv") %>%
   mutate(minute = as.numeric(minute)) 
 ```
 
-The `accel_df` dataset has `r nrow(accel_df)` observations, which each represent the activity count for a single minute of a single day for the 63 year-old male over a 5 week period. The dataset has `r ncol(accel_df)` variables, which include the `minute` of the given day and the associated `activity_count` for that minute, the number of the `week` out of 5, the `day_id`, the `day` of the week, and the `weekday_weekend` variable, which notes if the specified day is a weekday or a weekend. 
+The `accel_df` dataset has `r nrow(accel_df)` observations, which each represent the activity count for a single minute of a single day for the 63 year-old male over a 5 week period. The dataset has `r ncol(accel_df)` variables, which include the `minute` of the given day and the associated `activity_count` for that minute, the number of the `week` out of `r max(pull(accel_df, week))`, the `day_id` out of `r max(pull(accel_df, day_id))`, the `day` of the week, and the `weekday_weekend` variable, which notes if the specified day is a weekday or a weekend. 
 
 ```{r}
 accel_df %>% 
   group_by(day) %>% 
   summarize(daily_activity = sum(activity_count)) %>% 
-  mutate(day = as.factor(day), day = factor(day, levels = c("Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"))) %>% 
   arrange(day) %>% 
+  knitr::kable(caption = "Total Activity per day of the week")
+
+accel_df %>% 
+  group_by(day_id, day) %>% 
+  summarize(daily_activity = sum(activity_count)) %>% 
+  arrange(day_id) %>% 
   knitr::kable(caption = "Total Activity per day of the week")
 ```
 
 Activity seems to increase in later weekdays (Wednesday - Friday) compared to weekends and earlier weekdays (Satursday - Tuesday). 
 
+## I prefer first one
+
 ```{r}
 accel_df %>% 
   group_by(day, minute) %>% 
   summarize(activity_time = sum(activity_count)) %>% 
-  mutate(day = as.factor(day), day = factor(day, levels = c("Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday")), hour = minute/60) %>% 
+  mutate(hour = minute/60) %>% 
   arrange(day) %>% 
   ggplot(aes(x=hour, y = activity_time, color = day)) +
   geom_line(alpha = .3)
+
+accel_df %>% 
+  group_by(day_id, minute, day, week) %>% 
+  summarize(activity_time = sum(activity_count)) %>% 
+  mutate(hour = minute/60) %>% 
+  arrange(day_id) %>% 
+  ggplot(aes(x=hour, y = activity_time, group, day_id, color = week)) +
+  geom_line(alpha = .3) + 
+  facet_grid(day ~ .)
 ```
 
 It appears that activity is greatest throughout the day around 11 AM - 12 PM on Sundays and 7-9 PM on Fridays. There is minimal activity before 5 AM, presumably when this person is sleeping, and between 1-7 PM, presumably when this person is working. 
 
-
+## USE SECOND ONE (Delete color = ewek) 
